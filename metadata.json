@@ -1,0 +1,5 @@
+{
+  "name": "Generative AI Sales Chatbot",
+  "description": "A web application featuring a chatbot that first gets configured with product and company information, and then answers customer questions using the Gemini API. The entire application runs from a single HTML file with pure JavaScript and CSS, without any frameworks.",
+  "requestFramePermissions": []
+}
