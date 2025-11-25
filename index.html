@@ -1,614 +1,421 @@
-
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatbot de Ventas con IA Generativa</title>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-gradient-start: #1a1a2e;
-            --bg-gradient-end: #16213e;
-            --primary-color: #1f2041;
-            --secondary-color: #4b3f72;
-            --text-color: #e0e0e0;
-            --text-muted: #a0a0a0;
-            --accent-gradient-start: #7f5af0;
-            --accent-gradient-end: #a78bfa;
-            --user-bubble-start: #6366f1;
-            --user-bubble-end: #818cf8;
-            --bot-bubble: #2d3748;
-            --font-family: 'Inter', sans-serif;
-        }
 
-        *, *::before, *::after {
-            box-sizing: border-box;
+    <title>Chatbot para Clientes</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Icono -->
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/4712/4712105.png" type="image/png">
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #040c18;
+            color: #ffffff;
             margin: 0;
             padding: 0;
-        }
-
-        html, body {
-            height: 100%;
             overflow: hidden;
         }
 
-        body {
-            font-family: var(--font-family);
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
-        }
-
-        #particle-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-        }
-        
+        /* WELCOME SCREEN */
         #welcome-screen {
-            position: relative;
-            z-index: 10;
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: linear-gradient(135deg, #0a1124, #02050d);
             text-align: center;
-            padding: 3rem 2rem;
-            background: rgba(31, 32, 65, 0.4);
-            border-radius: 20px;
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            transition: opacity 0.4s ease-in-out;
         }
 
         #welcome-screen.hidden {
             opacity: 0;
-            transform: scale(0.9);
             pointer-events: none;
         }
 
         #welcome-screen h1 {
-            font-size: clamp(1.5rem, 5vw, 2.5rem);
-            margin-bottom: 0.5rem;
-            background: linear-gradient(90deg, var(--accent-gradient-start), var(--accent-gradient-end));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 700;
+            font-size: 42px;
+            font-weight: 600;
+            margin-bottom: 15px;
         }
 
         #welcome-screen p {
-            color: var(--text-muted);
-            margin-bottom: 2rem;
-            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+            font-size: 18px;
+            opacity: 0.8;
+            margin-bottom: 30px;
         }
 
         #start-button {
-            padding: 0.8rem 2rem;
+            padding: 12px 35px;
+            font-size: 18px;
             border: none;
-            border-radius: 50px;
-            background: linear-gradient(90deg, var(--accent-gradient-start), var(--accent-gradient-end));
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
+            border-radius: 10px;
             cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            background: #007bff;
+            color: #ffffff;
+            transition: transform 0.2s, background 0.3s;
         }
 
         #start-button:hover {
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 10px 20px rgba(127, 90, 240, 0.3);
+            transform: scale(1.05);
+            background: #0056cc;
         }
 
+        /* MAIN APP CONTAINER */
         #app-container {
-            width: 100%;
-            height: 100%;
-            max-width: 800px;
-            max-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background-color: var(--primary-color);
-            border-radius: 0;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-            position: absolute;
-            z-index: 1;
             opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.5s ease-in-out;
             pointer-events: none;
+            transition: opacity 0.6s ease-in-out;
         }
-        
+
         #app-container.visible {
             opacity: 1;
-            transform: translateY(0);
-            pointer-events: auto;
+            pointer-events: all;
         }
 
-        @media (min-width: 768px) {
-            #app-container {
-                border-radius: 16px;
-                height: 90vh;
-                max-height: 800px;
-            }
-        }
-
-        #chat-header {
-            padding: 1rem 1.5rem;
-            background-color: rgba(31, 32, 65, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-            font-size: 1.25rem;
+        /* HEADER */
+        header {
+            background: #0c1326;
+            padding: 18px;
+            font-size: 22px;
             font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-        
-        #header-title {
-            transition: opacity 0.3s ease-in-out;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: opacity 0.4s ease;
         }
 
+        /* CHAT WINDOW */
         #chat-window {
-            flex-grow: 1;
-            padding: 1.5rem;
+            height: 80vh;
             overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+            background: #040c18;
             display: flex;
             flex-direction: column;
-            gap: 1.25rem;
-            scrollbar-width: thin;
-            scrollbar-color: var(--secondary-color) transparent;
+            gap: 15px;
         }
 
+        /* MESSAGE BUBBLES */
         .message {
             display: flex;
-            flex-direction: column;
-            max-width: 85%;
-            animation: slideIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-            position: relative;
-        }
-
-        .message .bubble {
-            padding: 0.8rem 1.2rem;
-            border-radius: 20px;
-            word-wrap: break-word;
-        }
-        
-        .message .bubble p:last-child { margin-bottom: 0; }
-        .message .bubble ul, .message .bubble ol { padding-left: 20px; }
-        .message .bubble a { color: var(--accent-gradient-end); }
-
-        .user-message {
-            align-self: flex-end;
-            align-items: flex-end;
-        }
-
-        .user-message .bubble {
-            background: linear-gradient(135deg, var(--user-bubble-start), var(--user-bubble-end));
-            color: white;
-            border-bottom-right-radius: 5px;
+            width: 100%;
         }
 
         .bot-message {
-            align-self: flex-start;
-            align-items: flex-start;
+            justify-content: flex-start;
         }
 
-        .bot-message .bubble {
-            background-color: var(--bot-bubble);
-            color: var(--text-color);
-            border-bottom-left-radius: 5px;
+        .user-message {
+            justify-content: flex-end;
         }
-        
+
+        .bubble {
+            max-width: 75%;
+            padding: 14px 20px;
+            border-radius: 14px;
+            font-size: 16px;
+            line-height: 22px;
+            background: #112240;
+            color: white;
+            animation: fadeInUp 0.25s ease-out;
+        }
+
+        .user-message .bubble {
+            background: #007bff;
+        }
+
+        /* TYPING INDICATOR */
         .typing-indicator {
             display: flex;
-            align-items: center;
-            gap: 5px;
-            padding: 0.8rem 1.2rem;
+            gap: 6px;
+            padding: 10px 18px;
+            background: #112240;
+            border-radius: 14px;
+            width: fit-content;
         }
 
         .typing-indicator .dot {
-            width: 9px;
-            height: 9px;
-            background-color: var(--secondary-color);
+            width: 8px;
+            height: 8px;
+            background: white;
             border-radius: 50%;
-            animation: bounce 1.4s infinite ease-in-out both;
+            opacity: 0.4;
+            animation: blink 1.4s infinite;
         }
 
-        .typing-indicator .dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-indicator .dot:nth-child(2) { animation-delay: -0.16s; }
-
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1.0); }
+        .typing-indicator .dot:nth-child(2) {
+            animation-delay: 0.2s;
         }
 
-        @keyframes slideIn {
-            0% { transform: translateY(20px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
+        .typing-indicator .dot:nth-child(3) {
+            animation-delay: 0.4s;
         }
 
+        @keyframes blink {
+            0% {
+                opacity: 0.3;
+                transform: translateY(0px);
+            }
+
+            50% {
+                opacity: 1;
+                transform: translateY(-3px);
+            }
+
+            100% {
+                opacity: 0.3;
+                transform: translateY(0px);
+            }
+        }
+
+        /* INPUT AREA */
         #chat-input-form {
             display: flex;
-            padding: 1rem;
+            padding: 15px;
+            background: #0c1326;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
-            background-color: var(--primary-color);
-            gap: 0.75rem;
-            align-items: center;
         }
 
         #chat-input {
-            flex-grow: 1;
-            border: 1px solid var(--secondary-color);
-            background-color: #2d2d50;
-            color: var(--text-color);
-            border-radius: 25px;
-            padding: 0.85rem 1.2rem;
-            font-size: 1rem;
+            flex: 1;
+            padding: 14px;
+            border-radius: 10px;
+            border: none;
             outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        #chat-input:focus {
-            border-color: var(--accent-gradient-start);
-            box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.3);
+            font-size: 16px;
+            background: #112240;
+            color: white;
         }
 
         #send-button {
+            margin-left: 10px;
+            padding: 14px 22px;
             border: none;
-            background: linear-gradient(135deg, var(--accent-gradient-start), var(--accent-gradient-end));
-            color: white;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            border-radius: 10px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            flex-shrink: 0;
-        }
-        
-        #send-button svg {
-            transition: transform 0.3s ease;
-        }
-
-        #send-button:hover:not(:disabled) {
-            transform: scale(1.1);
-            box-shadow: 0 5px 15px rgba(127, 90, 240, 0.4);
-        }
-        
-        #send-button:hover:not(:disabled) svg {
-            transform: rotate(-15deg) translateX(2px);
+            background: #007bff;
+            color: white;
         }
 
         #send-button:disabled {
-            background: var(--secondary-color);
+            opacity: 0.5;
             cursor: not-allowed;
         }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body>
-    <canvas id="particle-canvas"></canvas>
 
+    <!-- WELCOME SCREEN -->
     <div id="welcome-screen">
-        <h1>Bienvenido al Asistente Virtual UNAD</h1>
-        <p>Listo para ayudarte a configurar tu negocio.</p>
-        <button id="start-button">Iniciar Configuración</button>
+        <h1>Bienvenido</h1>
+        <p>Configura tu asistente virtual para atender clientes automáticamente.</p>
+        <button id="start-button">Comenzar</button>
     </div>
 
+    <!-- APP CONTAINER -->
     <div id="app-container">
-        <header id="chat-header">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-            <span id="header-title">Nuestro chatbot UNAD</span>
+
+        <!-- HEADER -->
+        <header>
+            <span id="header-title">Asistente Virtual</span>
         </header>
-        <main id="chat-window"></main>
+
+        <!-- CHAT WINDOW -->
+        <div id="chat-window"></div>
+
+        <!-- INPUT FORM -->
         <form id="chat-input-form">
-            <input type="text" id="chat-input" placeholder="Escribe tu mensaje..." autocomplete="off">
-            <button type="submit" id="send-button" aria-label="Enviar Mensaje">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-            </button>
+            <input id="chat-input" type="text" placeholder="Escribe tu mensaje..." autocomplete="off" />
+            <button id="send-button" type="submit">Enviar</button>
         </form>
+
     </div>
+<script type="module">
+    import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-    <script>
-        // Particle Background Script
-        const canvas = document.getElementById('particle-canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        let particlesArray;
-        const colors = ["#7f5af0", "#a78bfa", "#c3a9f7", "#e0e0e0"];
+    // ⛔ NO expongas la API KEY si vas a publicar en GitHub
+    // Usa variables de entorno o un backend real
+    const API_KEY = "AIzaSyBE7Vn63sS9ZkfdyCnJwUaNF1DJ4agDDIg";
 
-        class Particle {
-            constructor(x, y, directionX, directionY, size, color) {
-                this.x = x;
-                this.y = y;
-                this.directionX = directionX;
-                this.directionY = directionY;
-                this.size = size;
-                this.color = color;
-            }
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-            }
-            update() {
-                if (this.x > canvas.width || this.x < 0) this.directionX = -this.directionX;
-                if (this.y > canvas.height || this.y < 0) this.directionY = -this.directionY;
-                this.x += this.directionX;
-                this.y += this.directionY;
-                this.draw();
-            }
+    // Inicializar cliente correcto
+    const genAI = new GoogleGenerativeAI(API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    // DOM
+    const welcomeScreen = document.getElementById('welcome-screen');
+    const startButton = document.getElementById('start-button');
+    const appContainer = document.getElementById('app-container');
+    const chatWindow = document.getElementById('chat-window');
+    const chatInputForm = document.getElementById('chat-input-form');
+    const chatInput = document.getElementById('chat-input');
+    const sendButton = document.getElementById('send-button');
+    const headerTitle = document.getElementById('header-title');
+
+    // Estados
+    const SETUP = {
+        PRODUCT_NAME: "PRODUCT_NAME",
+        PRICE: "PRICE",
+        DETAILS: "DETAILS",
+        COMPANY: "COMPANY",
+        READY: "READY"
+    };
+
+    let state = SETUP.PRODUCT_NAME;
+    const product = {};
+    let history = [];
+
+    // Funciones UI
+    function addMessage(text, sender, html = false) {
+        const m = document.createElement("div");
+        m.className = `message ${sender}-message`;
+
+        const b = document.createElement("div");
+        b.className = "bubble";
+
+        if (html) b.innerHTML = text;
+        else b.textContent = text;
+
+        m.appendChild(b);
+        chatWindow.appendChild(m);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function disableInput() {
+        chatInput.disabled = true;
+        sendButton.disabled = true;
+    }
+
+    function enableInput() {
+        chatInput.disabled = false;
+        sendButton.disabled = false;
+        chatInput.focus();
+    }
+
+    function showTyping() {
+        const t = document.createElement("div");
+        t.id = "typing";
+        t.className = "message bot-message";
+        t.innerHTML = "<div class='bubble'>...</div>";
+        chatWindow.appendChild(t);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function hideTyping() {
+        const t = document.getElementById("typing");
+        if (t) t.remove();
+    }
+
+    // Preguntas iniciales
+    const setupQuestions = {
+        PRODUCT_NAME: "¡Hola! ¿Cuál es el nombre del producto que venderás?",
+        PRICE: (p) => `Perfecto. ¿Cuál será el precio de ${p}?`,
+        DETAILS: "Muy bien. Dame una descripción del producto.",
+        COMPANY: "Excelente. ¿Cómo se llama tu empresa y a qué se dedica?",
+        READY: "¡Listo! El chatbot ya está configurado. Pregúntame lo que desees."
+    };
+
+    // Lógica del setup
+    async function handleSetup(input) {
+        switch (state) {
+            case SETUP.PRODUCT_NAME:
+                product.name = input;
+                state = SETUP.PRICE;
+                addMessage(setupQuestions.PRICE(product.name), "bot");
+                break;
+
+            case SETUP.PRICE:
+                product.price = input;
+                state = SETUP.DETAILS;
+                addMessage(setupQuestions.DETAILS, "bot");
+                break;
+
+            case SETUP.DETAILS:
+                product.details = input;
+                state = SETUP.COMPANY;
+                addMessage(setupQuestions.COMPANY, "bot");
+                break;
+
+            case SETUP.COMPANY:
+                product.company = input;
+                state = SETUP.READY;
+
+                headerTitle.textContent = `${product.name} — Soporte`;
+
+                addMessage(setupQuestions.READY, "bot");
+                break;
+        }
+    }
+
+    // IA final para clientes
+    async function askAI(input) {
+        const system = `
+Eres un chatbot de soporte amigable.
+Solo responde usando la siguiente información
+y NO inventes datos:
+
+Empresa: ${product.company}
+
+Producto:
+- Nombre: ${product.name}
+- Precio: ${product.price}
+- Descripción: ${product.details}
+`;
+
+        const prompt = system + "\nUsuario: " + input;
+
+        const result = await model.generateContent(prompt);
+        return result.response.text();
+    }
+
+    // Iniciar app
+    startButton.addEventListener("click", () => {
+        welcomeScreen.style.display = "none";
+        appContainer.style.display = "flex";
+
+        addMessage(setupQuestions.PRODUCT_NAME, "bot");
+    });
+
+    // Enviar mensaje
+    chatInputForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        addMessage(text, "user");
+        chatInput.value = "";
+        disableInput();
+        showTyping();
+
+        // Setup o modo chatbot
+        if (state !== SETUP.READY) {
+            await handleSetup(text);
+        } else {
+            const answer = await askAI(text);
+            addMessage(answer, "bot");
         }
 
-        function init() {
-            particlesArray = [];
-            let numberOfParticles = (canvas.height * canvas.width) / 18000;
-            for (let i = 0; i < numberOfParticles; i++) {
-                let size = (Math.random() * 2.5) + 1;
-                let x = (Math.random() * ((innerWidth - size * 2) - (size * 2)) + size * 2);
-                let y = (Math.random() * ((innerHeight - size * 2) - (size * 2)) + size * 2);
-                let directionX = (Math.random() * .3) - .15;
-                let directionY = (Math.random() * .3) - .15;
-                let color = colors[Math.floor(Math.random() * colors.length)];
-                particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
-            }
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            ctx.clearRect(0, 0, innerWidth, innerHeight);
-            for (let i = 0; i < particlesArray.length; i++) {
-                particlesArray[i].update();
-            }
-            connect();
-        }
-
-        function connect() {
-            let opacityValue = 1;
-            for (let a = 0; a < particlesArray.length; a++) {
-                for (let b = a; b < particlesArray.length; b++) {
-                    let distance = ((particlesArray[a].x - particlesArray[b].x) * (particlesArray[a].x - particlesArray[b].x)) +
-                        ((particlesArray[a].y - particlesArray[b].y) * (particlesArray[a].y - particlesArray[b].y));
-                    if (distance < (canvas.width / 8) * (canvas.height / 8)) {
-                        opacityValue = 1 - (distance / 20000);
-                        ctx.strokeStyle = `rgba(167, 139, 250, ${opacityValue * 0.2})`;
-                        ctx.lineWidth = 1;
-                        ctx.beginPath();
-                        ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
-                        ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
-                        ctx.stroke();
-                    }
-                }
-            }
-        }
-
-        window.addEventListener('resize', () => {
-            canvas.width = innerWidth;
-            canvas.height = innerHeight;
-            init();
-        });
-
-        init();
-        animate();
-    </script>
-
-    <script type="module">
-        import { GoogleGenAI } from "https://cdn.jsdelivr.net/npm/@google/genai/+esm";
-
-        const API_KEY = "AIzaSyBE7Vn63sS9ZkfdyCnJwUaNF1DJ4agDDIg";
-
-        // DOM Elements
-        const welcomeScreen = document.getElementById('welcome-screen');
-        const startButton = document.getElementById('start-button');
-        const appContainer = document.getElementById('app-container');
-        const chatWindow = document.getElementById('chat-window');
-        const chatInputForm = document.getElementById('chat-input-form');
-        const chatInput = document.getElementById('chat-input');
-        const sendButton = document.getElementById('send-button');
-        const headerTitle = document.getElementById('header-title');
-
-        // App State
-        const SETUP_STATE = {
-            PRODUCT_NAME: 'PRODUCT_NAME',
-            PRICE: 'PRICE',
-            DETAILS: 'DETAILS',
-            COMPANY: 'COMPANY',
-            READY: 'READY'
-        };
-        let currentState = SETUP_STATE.PRODUCT_NAME;
-        const productData = {};
-        let conversationHistory = [];
-        let ai;
-
-        try {
-            ai = new GoogleGenAI({ apiKey: API_KEY });
-        } catch(e) {
-            console.error(e);
-            // We can't add a message yet as the chat is hidden.
-            // We could show an error on the welcome screen if needed.
-        }
-
-        const setupQuestions = {
-            [SETUP_STATE.PRODUCT_NAME]: "¡Hola! Soy tu nuevo asistente de ventas. Para empezar, por favor dime el nombre del producto que venderás.",
-            [SETUP_STATE.PRICE]: (product) => `Genial. ¿Cuál es el precio de un ${product}?`,
-            [SETUP_STATE.DETAILS]: "Perfecto. Ahora, por favor proporciona una descripción general del producto, incluyendo sus características y beneficios clave.",
-            [SETUP_STATE.COMPANY]: "Excelente. Por último, háblame un poco de tu empresa. ¿Cuál es su nombre y qué representa?",
-            [SETUP_STATE.READY]: "¡Configuración completada! Ya estoy listo para ayudar a tus clientes. Pueden empezar a hacer preguntas."
-        };
-
-        function disableInput(message = 'Pensando...') {
-            chatInput.disabled = true;
-            sendButton.disabled = true;
-            chatInput.placeholder = message;
-        }
-
-        function enableInput() {
-            chatInput.disabled = false;
-            sendButton.disabled = false;
-            chatInput.placeholder = "Escribe tu mensaje...";
-            chatInput.focus();
-        }
-
-        function addMessage(text, sender, isHtml = false) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${sender}-message`;
-
-            const bubbleDiv = document.createElement('div');
-            bubbleDiv.className = 'bubble';
-            if (isHtml) {
-                bubbleDiv.innerHTML = text;
-            } else {
-                const p = document.createElement('p');
-                p.textContent = text;
-                bubbleDiv.appendChild(p);
-            }
-
-            messageDiv.appendChild(bubbleDiv);
-            chatWindow.appendChild(messageDiv);
-            scrollToBottom();
-        }
-
-        function showTypingIndicator() {
-            const indicator = document.createElement('div');
-            indicator.id = 'typing-indicator';
-            indicator.className = 'message bot-message typing-indicator';
-            indicator.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-            chatWindow.appendChild(indicator);
-            scrollToBottom();
-        }
-
-        function removeTypingIndicator() {
-            const indicator = document.getElementById('typing-indicator');
-            if (indicator) {
-                indicator.remove();
-            }
-        }
-
-        function scrollToBottom() {
-            chatWindow.scrollTop = chatWindow.scrollHeight;
-        }
-        
-        async function handleSetup(userInput) {
-            switch (currentState) {
-                case SETUP_STATE.PRODUCT_NAME:
-                    productData.name = userInput;
-                    currentState = SETUP_STATE.PRICE;
-                    addMessage(setupQuestions[currentState](productData.name), 'bot');
-                    break;
-                case SETUP_STATE.PRICE:
-                    productData.price = userInput;
-                    currentState = SETUP_STATE.DETAILS;
-                    addMessage(setupQuestions[currentState], 'bot');
-                    break;
-                case SETUP_STATE.DETAILS:
-                    productData.details = userInput;
-                    currentState = SETUP_STATE.COMPANY;
-                    addMessage(setupQuestions[currentState], 'bot');
-                    break;
-                case SETUP_STATE.COMPANY:
-                    productData.company = userInput;
-                    currentState = SETUP_STATE.READY;
-                    headerTitle.style.opacity = '0';
-                    setTimeout(() => {
-                        headerTitle.textContent = `${productData.name} - Soporte`;
-                        headerTitle.style.opacity = '1';
-                    }, 300);
-                    addMessage(setupQuestions[currentState], 'bot');
-                    break;
-            }
-        }
-
-        async function getCustomerResponse(userInput) {
-            const systemInstruction = `Eres un chatbot de soporte al cliente amigable y servicial para una empresa. 
-            Tu objetivo es responder las preguntas de los clientes basándote ÚNICAMENTE en la información proporcionada a continuación. 
-            No inventes información. Si una pregunta está fuera del alcance de esta información, indica amablemente que solo puedes responder preguntas sobre el producto y la empresa especificados.
-            Formatea tus respuestas usando Markdown para una mejor legibilidad (listas, negritas, etc.).
-
-            **Información de la Empresa:**
-            ${productData.company}
-
-            **Información del Producto:**
-            - Nombre: ${productData.name}
-            - Precio: ${productData.price}
-            - Descripción: ${productData.details}`;
-            
-            const contents = [
-                ...conversationHistory,
-                { role: 'user', parts: [{text: userInput }] }
-            ];
-
-            try {
-                const response = await ai.models.generateContent({
-                    model: "gemini-1.5-flash",
-                    contents: contents,
-                    config: {
-                        systemInstruction: systemInstruction,
-                    }
-                });
-
-                return response.text;
-            } catch (error) {
-                console.error("Error en la API de Gemini:", error);
-                return "Lo siento, parece que tengo problemas para conectarme. Por favor, inténtalo de nuevo en un momento.";
-            }
-        }
-        
-        function startChat() {
-            welcomeScreen.classList.add('hidden');
-            setTimeout(() => {
-                appContainer.classList.add('visible');
-                addMessage(setupQuestions[currentState], 'bot');
-                chatInput.focus();
-            }, 300); // delay should match animation time
-        }
-        
-        startButton.addEventListener('click', startChat);
-
-        chatInputForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const userInput = chatInput.value.trim();
-            if (userInput === '' || !ai) return;
-
-            addMessage(userInput, 'user');
-            chatInput.value = '';
-            disableInput();
-            showTypingIndicator();
-
-            if (currentState !== SETUP_STATE.READY) {
-                await handleSetup(userInput);
-            } else {
-                const botResponseText = await getCustomerResponse(userInput);
-                
-                conversationHistory.push({ role: 'user', parts: [{ text: userInput }] });
-                conversationHistory.push({ role: 'model', parts: [{ text: botResponseText }] });
-
-                // Keep history from getting too long
-                if (conversationHistory.length > 10) {
-                    conversationHistory = conversationHistory.slice(-10);
-                }
-                
-                addMessage(marked.parse(botResponseText), 'bot', true);
-            }
-
-            removeTypingIndicator();
-            enableInput();
-        });
-        
-    </script>
-<script type="module" src="/index.tsx"></script>
-</body>
-</html>
+        hideTyping();
+        enableInput();
+    });
+</script>
